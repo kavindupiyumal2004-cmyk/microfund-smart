@@ -10,6 +10,12 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT || 3306),
     dialect: 'mysql',
+    dialectOptions: String(process.env.DB_SSL).toLowerCase() === 'true'
+      ? { ssl: {
+        rejectUnauthorized: true,
+        ...(process.env.DB_SSL_CA ? { ca: process.env.DB_SSL_CA.replace(/\\n/g, '\n') } : {}),
+      } }
+      : {},
     logging,
     define: {
       underscored: true,

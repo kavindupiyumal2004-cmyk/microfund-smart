@@ -19,7 +19,7 @@ const port = Number(process.env.PORT || 5000);
     await sequelize.authenticate();
     logger.info('Database connection established.');
     if (String(process.env.DB_SYNC).toLowerCase() === 'true') await sequelize.sync({ alter: process.env.NODE_ENV !== 'production' });
-    server.listen(port, () => logger.info(`MicroFund API running at http://localhost:${port}`));
+    server.listen(port, '0.0.0.0', () => logger.info(`MicroFund API listening on port ${port}`));
   } catch (error) {
     logger.error('Failed to start server', { error: error.stack });
     process.exit(1);

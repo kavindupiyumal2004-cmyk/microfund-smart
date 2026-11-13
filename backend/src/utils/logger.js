@@ -3,7 +3,8 @@ const fs = require('fs');
 const winston = require('winston');
 
 const logDir = path.join(__dirname, '../../logs');
-fs.mkdirSync(logDir, { recursive: true });
+const isProduction = process.env.NODE_ENV === 'production';
+if (!isProduction) fs.mkdirSync(logDir, { recursive: true });
 
 const format = winston.format.combine(
   winston.format.timestamp(),
@@ -15,7 +16,7 @@ const logger = winston.createLogger({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
   format,
   defaultMeta: { service: 'microfund-api' },
-  transports: [
+  transports: isProduction ? [new winston.transports.Console()] : [
     new winston.transports.File({ filename: path.join(logDir, 'error.log'), level: 'error' }),
     new winston.transports.File({ filename: path.join(logDir, 'combined.log') }),
   ],

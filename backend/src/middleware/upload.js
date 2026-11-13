@@ -4,7 +4,9 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { AppError } = require('./errorHandler');
 
-const privateRoot = path.join(__dirname, '../../storage/private');
+const privateRoot = process.env.PRIVATE_STORAGE_DIR
+  ? path.resolve(process.env.PRIVATE_STORAGE_DIR)
+  : path.join(__dirname, '../../storage/private');
 const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
 
 function uploader(folderName) {
