@@ -1,0 +1,15 @@
+node_modules/
+.env
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/storage/private/customer-documents/*
+backend/storage/private/field-documents/*
+backend/storage/private/payment-slips/*
+!backend/storage/private/customer-documents/.gitkeep
+!backend/storage/private/field-documents/.gitkeep
+!backend/storage/private/payment-slips/.gitkeep
+backend/logs/*
+!backend/logs/.gitkeep
+frontend/dist/
+.DS_Store
+*.log

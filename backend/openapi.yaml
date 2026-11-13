@@ -1,0 +1,300 @@
+openapi: 3.0.3
+info:
+  title: MicroFund Smart Microfinance API
+  version: 3.0.0
+  description: REST API for the five-role MicroFund workflow covering customer onboarding, Agent field verification, Manager credit assessment and approval, repayments, arrears collections, Owner oversight, notifications and reports.
+servers:
+  - url: http://localhost:5000/api
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+paths:
+  /health:
+    get:
+      summary: API health check
+      responses:
+        '200': { description: Healthy }
+  /auth/register:
+    post:
+      summary: Register a customer with identity and residence documents
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [full_name, email, password, nic, phone, address_line1, city, area_id, nic_front, nic_back, residence_proof]
+              properties:
+                full_name: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+                nic: { type: string }
+                phone: { type: string }
+                address_line1: { type: string }
+                city: { type: string }
+                area_id: { type: integer }
+                occupation: { type: string }
+                monthly_income: { type: number }
+                nic_front: { type: string, format: binary }
+                nic_back: { type: string, format: binary }
+                residence_proof: { type: string, format: binary }
+                income_proof: { type: string, format: binary }
+      responses:
+        '201': { description: Customer registered }
+        '422': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+  /auth/login:
+    post:
+      summary: Sign in and receive a JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200': { description: Login successful }
+  /documents/customer/mine:
+    get:
+      summary: View the signed-in customer's current documents
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Customer documents }
+  /documents/customer/{type}/reupload:
+    post:
+      summary: Upload a new version of a customer document
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                document: { type: string, format: binary }
+                title: { type: string }
+      responses:
+        '201': { description: Document uploaded }
+  /documents/application/{applicationId}:
+    get:
+      summary: View customer documents, field evidence and review summary for an application
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: applicationId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Application document bundle }
+  /documents/customer/{id}/review:
+    patch:
+      summary: Manager accepts, rejects or requests a re-upload of a customer document
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [ACCEPTED, REJECTED, REUPLOAD_REQUIRED] }
+                note: { type: string }
+      responses:
+        '200': { description: Review saved }
+  /documents/field/visit/{visitId}:
+    post:
+      summary: Agent uploads a separate evidence file for a visit
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: visitId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [document_type, document]
+              properties:
+                document_type: { type: string, enum: [RESIDENCE_PHOTO, BUSINESS_PHOTO, INCOME_EVIDENCE, SIGNED_FORM, VISIT_REPORT, OTHER] }
+                title: { type: string }
+                document: { type: string, format: binary }
+      responses:
+        '201': { description: Field evidence uploaded }
+  /applications:
+    get:
+      summary: Owner/Manager advanced application search
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: customer_name
+          schema: { type: string }
+        - in: query
+          name: nic
+          schema: { type: string }
+        - in: query
+          name: phone
+          schema: { type: string }
+        - in: query
+          name: loan_no
+          schema: { type: string }
+      responses:
+        '200': { description: Matching applications }
+    post:
+      summary: Customer submits a loan application
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201': { description: Application created }
+  /applications/{id}/assessment:
+    get:
+      summary: Owner/Manager views the recorded credit and repayment-capacity assessment
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Credit assessment }
+    put:
+      summary: Manager creates or updates the credit and repayment-capacity assessment
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Assessment saved }
+  /applications/{id}/approve:
+    post:
+      summary: Manager approves an application after required documents, field evidence and credit assessment are complete
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '201': { description: Loan and repayment schedule generated }
+  /payments/search:
+    get:
+      summary: Search loans by loan number, application, customer name, NIC, phone or email
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Matching loans }
+  /payment-submissions:
+    post:
+      summary: Customer uploads a bank payment slip
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [loan_id, amount, payment_date, bank_name, reference_no, slip]
+              properties:
+                loan_id: { type: integer }
+                installment_id: { type: integer }
+                amount: { type: number }
+                payment_date: { type: string, format: date }
+                bank_name: { type: string }
+                reference_no: { type: string }
+                customer_note: { type: string }
+                slip: { type: string, format: binary }
+      responses:
+        '201': { description: Slip submitted and assigned to a cashier }
+    get:
+      summary: Cashier sees assigned slips; Manager and Owner can view all slips
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Payment submissions }
+  /payment-submissions/{id}/decision:
+    post:
+      summary: Cashier accepts, rejects or requests clarification
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [ACCEPT, REJECT, CLARIFY] }
+                note: { type: string }
+      responses:
+        '200': { description: Decision saved; accepted slips create official payments }
+  /admin/user-summary:
+    get:
+      summary: User counts by category
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Category counts }
+  /admin/users:
+    get:
+      summary: Search and filter users by category, role, area and verification
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Users with pagination }
+  /collections:
+    get:
+      summary: Owner/Manager views all collection cases; Agent sees assigned cases
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Overdue collection cases }
+  /collections/{id}/activities:
+    post:
+      summary: Manager or Agent records a call, SMS, field visit, promise-to-pay or escalation
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201': { description: Collection activity recorded }
+  /collections/{id}/assign:
+    patch:
+      summary: Manager assigns an overdue case to an Agent
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Case assigned }
+  /reports/preview:
+    post:
+      summary: Preview a report with selected columns and filters
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Report rows, labels and summary cards }
+  /reports/export:
+    post:
+      summary: Export selected report columns as colourful PDF or CSV
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Downloadable report file }

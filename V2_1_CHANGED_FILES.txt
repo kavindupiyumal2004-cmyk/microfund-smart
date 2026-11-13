@@ -1,0 +1,21 @@
+Frontend changes:
+- frontend/package.json
+- frontend/src/main.jsx
+- frontend/src/utils/sweetAlert.js
+- frontend/src/components/ErrorBoundary.jsx
+- frontend/src/components/NotificationBell.jsx
+- frontend/src/components/DashboardLayout.jsx
+- frontend/src/components/DocumentReviewPanel.jsx
+- frontend/src/pages/dashboard/NotificationsPage.jsx
+- frontend/src/pages/admin/AdminApplicationsPage.jsx
+- frontend/src/pages/cashier/PaymentReviewsPage.jsx
+- frontend/src/pages/customer/PaymentSlipsPage.jsx
+- all frontend files that previously imported react-hot-toast
+- frontend/src/styles/global.css
+
+Backend changes:
+- backend/src/controllers/notificationController.js
+
+Documentation:
+- UPDATE_V2_1_SINHALA.md
+- TEST_STATUS.md

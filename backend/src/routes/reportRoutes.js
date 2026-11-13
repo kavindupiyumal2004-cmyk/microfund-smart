@@ -1,0 +1,11 @@
+const router = require('express').Router();
+const { body } = require('express-validator');
+const controller = require('../controllers/reportController');
+const { authenticate, authorize } = require('../middleware/auth');
+const validate = require('../middleware/validate');
+router.use(authenticate, authorize('OWNER', 'MANAGER', 'CASHIER'));
+const types = ['loans', 'applications', 'payments', 'payment_submissions', 'collections', 'users'];
+router.get('/catalog', controller.catalog);
+router.post('/preview', [body('type').isIn(types), body('columns').optional().isArray(), body('filters').optional().isObject(), body('title').optional({ nullable: true }).isLength({ max: 160 })], validate, controller.preview);
+router.post('/export', [body('type').isIn(types), body('format').isIn(['pdf', 'csv']), body('columns').optional().isArray(), body('filters').optional().isObject(), body('title').optional({ nullable: true }).isLength({ max: 160 })], validate, controller.export);
+module.exports = router;

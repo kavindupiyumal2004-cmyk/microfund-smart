@@ -1,0 +1,57 @@
+MicroFund V3.0 - Changed/New Files
+==================================
+
+CHANGED  README.md
+CHANGED  README_SINHALA.md
+CHANGED  RUN_FIRST_SINHALA.md
+CHANGED  TEST_STATUS.md
+ADDED    V3_FIVE_ROLE_CHANGES.md
+CHANGED  backend/database/create_database.sql
+CHANGED  backend/database/microfund_complete.sql
+ADDED    backend/database/upgrade_v2_to_v3.sql
+CHANGED  backend/openapi.yaml
+CHANGED  backend/package.json
+CHANGED  backend/src/app.js
+CHANGED  backend/src/controllers/adminController.js
+CHANGED  backend/src/controllers/applicationController.js
+ADDED    backend/src/controllers/collectionController.js
+CHANGED  backend/src/controllers/dashboardController.js
+CHANGED  backend/src/controllers/documentController.js
+CHANGED  backend/src/controllers/fieldController.js
+CHANGED  backend/src/controllers/fileController.js
+CHANGED  backend/src/controllers/paymentController.js
+CHANGED  backend/src/controllers/paymentSubmissionController.js
+CHANGED  backend/src/controllers/reportController.js
+CHANGED  backend/src/models/index.js
+CHANGED  backend/src/routes/adminRoutes.js
+CHANGED  backend/src/routes/applicationRoutes.js
+CHANGED  backend/src/routes/authRoutes.js
+ADDED    backend/src/routes/collectionRoutes.js
+CHANGED  backend/src/routes/documentRoutes.js
+CHANGED  backend/src/routes/fieldRoutes.js
+CHANGED  backend/src/routes/paymentRoutes.js
+CHANGED  backend/src/routes/paymentSubmissionRoutes.js
+CHANGED  backend/src/routes/reportRoutes.js
+CHANGED  backend/src/scripts/seed.js
+ADDED    backend/src/services/collectionService.js
+CHANGED  backend/src/services/emailService.js
+CHANGED  frontend/package.json
+CHANGED  frontend/src/App.jsx
+CHANGED  frontend/src/components/DashboardLayout.jsx
+CHANGED  frontend/src/components/DocumentReviewPanel.jsx
+CHANGED  frontend/src/pages/admin/AdminApplicationsPage.jsx
+CHANGED  frontend/src/pages/admin/AdminCatalogPage.jsx
+CHANGED  frontend/src/pages/admin/AdminUsersPage.jsx
+CHANGED  frontend/src/pages/admin/UserDetailsPage.jsx
+CHANGED  frontend/src/pages/cashier/PaymentReviewsPage.jsx
+CHANGED  frontend/src/pages/cashier/PaymentsPage.jsx
+ADDED    frontend/src/pages/collections/CollectionsPage.jsx
+CHANGED  frontend/src/pages/customer/ApplyLoanPage.jsx
+CHANGED  frontend/src/pages/customer/CustomerDocumentsPage.jsx
+CHANGED  frontend/src/pages/dashboard/DashboardHome.jsx
+CHANGED  frontend/src/pages/dashboard/ReportsPage.jsx
+CHANGED  frontend/src/pages/field/FieldVisitsPage.jsx
+CHANGED  frontend/src/pages/public/HomePage.jsx
+CHANGED  frontend/src/styles/global.css
+
+Total changed/new/removed paths: 52
