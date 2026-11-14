@@ -6,6 +6,6 @@ exports.loanTypes = asyncHandler(async (_req, res) => res.json({ success: true, 
 exports.company = (_req, res) => res.json({ success: true, data: {
   name: 'MicroFund Finance',
   tagline: 'Responsible finance, verified in the field.',
-  description: 'A demonstration microfinance company offering transparent, community-focused loan processing and repayment services.',
+  description: 'MicroFund brings loan applications, field verification, approvals and repayment tracking together in one platform.',
   contact: { phone: '+94 11 555 0101', email: 'info@microfund.local', address: 'Colombo, Sri Lanka' },
 } });
