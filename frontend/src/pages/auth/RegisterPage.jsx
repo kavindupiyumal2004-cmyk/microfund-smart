@@ -5,6 +5,8 @@ import toast, { Swal } from '../../utils/sweetAlert';
 import { useAuth } from '../../contexts/AuthContext';
 import api, { errorMessage } from '../../api/client';
 import PasswordField from '../../components/PasswordField';
+import PasswordFeedback from '../../components/PasswordFeedback';
+import { passwordStrength } from '../../utils/passwordStrength';
 import AuthShell from './AuthShell';
 
 const initial = { full_name: '', email: '', password: '', confirm_password: '', nic: '', phone: '', address_line1: '', city: '', area_id: '', occupation: '', monthly_income: '' };
@@ -20,6 +22,7 @@ export default function RegisterPage() {
 
   const submit = async (event) => {
     event.preventDefault();
+    if (!passwordStrength(form.password).valid) return toast.error('Use at least 8 characters with uppercase, lowercase and a number.');
     if (form.password !== form.confirm_password) return toast.error('Passwords do not match.');
     setBusy(true);
     try {
@@ -64,6 +67,7 @@ export default function RegisterPage() {
         <PasswordField value={form.password} onChange={change} autoComplete="new-password" />
         <PasswordField label="Confirm password" name="confirm_password" value={form.confirm_password} onChange={change} autoComplete="new-password" />
       </div>
+      <PasswordFeedback password={form.password} confirmation={form.confirm_password} />
       <p className="password-help">No documents needed to register. Upload them later from your dashboard.</p>
       <button className="button button-full" disabled={busy}>{busy ? 'Creating secure account...' : 'Create customer account'}</button>
       <p className="form-foot">Already registered? <Link to="/login">Sign in</Link></p>

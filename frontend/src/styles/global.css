@@ -344,3 +344,18 @@ body.dashboard-menu-open{overflow:hidden}
 .loan-policy-note,.repayment-policy-note{margin:12px 0 16px;padding:11px 13px;border:1px solid #cfe3fb;border-radius:10px;background:#f1f7ff;color:#37536f;font-size:12px;line-height:1.55}
 .loan-policy-note strong,.repayment-policy-note strong{color:#145da8}
 @media(max-width:760px){.topbar-workspace{display:none}.profile-dropdown{position:fixed;right:12px;top:66px;width:min(300px,calc(100vw - 24px))}}
+
+/* Live password guidance */
+.password-feedback{padding:16px;border:1px solid #dce5f0;border-radius:12px;background:#f8fafc}
+.password-strength-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
+.password-level{font-weight:700;color:#526177}
+.password-level.level-1{color:#b42318}.password-level.level-2{color:#945900}.password-level.level-3{color:#1663b7}.password-level.level-4{color:#087443}
+.password-strength-meter{display:flex;gap:5px;margin:10px 0 13px}
+.password-strength-meter span{height:6px;flex:1;border-radius:4px;background:#dfe6ef}
+.password-strength-meter.level-1 .filled{background:#d94040}.password-strength-meter.level-2 .filled{background:#d68b16}.password-strength-meter.level-3 .filled{background:#2475cc}.password-strength-meter.level-4 .filled{background:#15945e}
+.password-rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;list-style:none;padding:0;margin:0;font-size:12px;color:#526177}
+.password-rules li{display:flex;align-items:center;gap:7px}.password-rules svg,.password-match svg{flex-shrink:0}.password-rules .met{color:#087443}
+.password-strength-hint{display:block;color:#526177;line-height:1.5;margin-top:12px}
+.password-match{display:flex;align-items:center;gap:8px;border-top:1px solid #dce5f0;margin-top:12px;padding-top:12px;font-size:13px;color:#526177}
+.password-match.matches{color:#087443}.password-match.mismatch{color:#b42318}
+@media(max-width:480px){.password-rules{grid-template-columns:1fr}}
