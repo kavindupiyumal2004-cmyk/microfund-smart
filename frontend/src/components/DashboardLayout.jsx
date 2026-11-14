@@ -60,7 +60,7 @@ const menu = {
   ],
   CUSTOMER: [
     ['Dashboard', '/dashboard', Gauge],
-    ['My Documents', '/dashboard/documents', FileCheck2],
+    ['Documents', '/dashboard/documents', UploadCloud],
     ['Apply for Loan', '/dashboard/apply', FilePlus2],
     ['My Applications', '/dashboard/my-applications', FileCheck2],
     ['My Loans', '/dashboard/my-loans', WalletCards],

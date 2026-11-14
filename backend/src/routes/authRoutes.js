@@ -3,14 +3,8 @@ const { body } = require('express-validator');
 const controller = require('../controllers/authController');
 const validate = require('../middleware/validate');
 const { authenticate, authorize } = require('../middleware/auth');
-const { customerDocuments } = require('../middleware/upload');
 
-router.post('/register', customerDocuments.fields([
-  { name: 'nic_front', maxCount: 1 },
-  { name: 'nic_back', maxCount: 1 },
-  { name: 'residence_proof', maxCount: 1 },
-  { name: 'income_proof', maxCount: 1 },
-]), [
+router.post('/register', [
   body('full_name').trim().isLength({ min: 3, max: 120 }),
   body('email').isEmail().normalizeEmail(),
   body('password').isLength({ min: 8 }).matches(/[A-Z]/).matches(/[a-z]/).matches(/[0-9]/),

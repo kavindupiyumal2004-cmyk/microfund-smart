@@ -1,14 +1,12 @@
 const bcrypt = require('bcryptjs');
 const dayjs = require('dayjs');
 const { Op } = require('sequelize');
-const path = require('path');
-const { User, Role, CustomerProfile, CustomerDocument, Area, EmailToken } = require('../models');
+const { User, Role, CustomerProfile, Area, EmailToken } = require('../models');
 const asyncHandler = require('../utils/asyncHandler');
 const { AppError } = require('../middleware/errorHandler');
 const { createJwt, createOpaqueToken, hashOpaqueToken } = require('../utils/tokens');
 const { sendMail, verifySmtp, resetTemplate } = require('../services/emailService');
 const { audit } = require('../services/auditService');
-const { sha256File, cleanupMulterFiles } = require('../utils/files');
 
 const sanitizeUser = (user) => ({
   id: user.id,
@@ -27,31 +25,9 @@ async function issueEmailToken(user, type, hours) {
   return raw;
 }
 
-function fileRecord(userId, type, file, title) {
-  return sha256File(file.path).then((file_hash) => ({
-    user_id: userId,
-    document_type: type,
-    title,
-    file_path: file.path,
-    original_name: file.originalname,
-    mime_type: file.mimetype,
-    size_bytes: file.size,
-    file_hash,
-    status: 'PENDING',
-  }));
-}
-
 exports.register = asyncHandler(async (req, res) => {
-  const requiredFiles = ['nic_front', 'nic_back', 'residence_proof'];
-  const missing = requiredFiles.filter((name) => !req.files?.[name]?.[0]);
-  if (missing.length) {
-    cleanupMulterFiles(req.files);
-    throw new AppError(`Required documents missing: ${missing.join(', ')}.`, 422, 'REQUIRED_DOCUMENTS_MISSING');
-  }
-
   const role = await Role.findOne({ where: { name: 'CUSTOMER' } });
   if (!role) {
-    cleanupMulterFiles(req.files);
     throw new AppError('System roles are not initialized. Run the seed command.', 500);
   }
   const email = req.body.email.toLowerCase().trim();
@@ -60,12 +36,10 @@ exports.register = asyncHandler(async (req, res) => {
     CustomerProfile.findOne({ where: { nic: req.body.nic.trim() } }),
   ]);
   if (existingEmail || existingNic) {
-    cleanupMulterFiles(req.files);
     throw new AppError('An account already exists with this email or NIC.', 409, 'ACCOUNT_EXISTS');
   }
   const area = await Area.findByPk(req.body.area_id);
   if (!area || !area.is_active) {
-    cleanupMulterFiles(req.files);
     throw new AppError('Please select a valid service area.', 422, 'INVALID_AREA');
   }
 
@@ -79,7 +53,7 @@ exports.register = asyncHandler(async (req, res) => {
       role_id: role.id,
       is_active: true,
     }, { transaction });
-    await CustomerProfile.create({
+    user.CustomerProfile = await CustomerProfile.create({
       user_id: user.id,
       nic: req.body.nic.trim(),
       phone: req.body.phone.trim(),
@@ -90,25 +64,18 @@ exports.register = asyncHandler(async (req, res) => {
       monthly_income: req.body.monthly_income ? Number(req.body.monthly_income) : null,
     }, { transaction });
 
-    const files = [
-      ['NIC_FRONT', req.files.nic_front[0], 'National ID card - front'],
-      ['NIC_BACK', req.files.nic_back[0], 'National ID card - back'],
-      ['RESIDENCE_PROOF', req.files.residence_proof[0], 'Residence confirmation'],
-    ];
-    if (req.files.income_proof?.[0]) files.push(['INCOME_PROOF', req.files.income_proof[0], 'Income proof']);
-    const records = await Promise.all(files.map(([type, file, title]) => fileRecord(user.id, type, file, title)));
-    await CustomerDocument.bulkCreate(records, { transaction });
     await transaction.commit();
   } catch (error) {
     if (!transaction.finished) await transaction.rollback();
-    cleanupMulterFiles(req.files);
     throw error;
   }
 
-  await audit(req, 'CUSTOMER_REGISTERED', 'User', user.id, { email: user.email, documents: Object.keys(req.files || {}) });
+  await audit(req, 'CUSTOMER_REGISTERED', 'User', user.id, { email: user.email, documents_pending: true });
   res.status(201).json({
     success: true,
-    message: 'Registration successful. You can now sign in.',
+    message: 'Your account is ready. Upload your documents before applying for a loan.',
+    token: createJwt({ id: user.id, role_name: role.name }),
+    user: { ...sanitizeUser(user), role: role.name },
   });
 });
 

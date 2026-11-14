@@ -29,14 +29,14 @@ paths:
         '200': { description: Healthy }
   /auth/register:
     post:
-      summary: Register a customer with identity and residence documents
+      summary: Create a customer account and receive a JWT; upload documents after signing in
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
-              required: [full_name, email, password, nic, phone, address_line1, city, area_id, nic_front, nic_back, residence_proof]
+              required: [full_name, email, password, nic, phone, address_line1, city, area_id]
               properties:
                 full_name: { type: string }
                 email: { type: string, format: email }
@@ -48,12 +48,8 @@ paths:
                 area_id: { type: integer }
                 occupation: { type: string }
                 monthly_income: { type: number }
-                nic_front: { type: string, format: binary }
-                nic_back: { type: string, format: binary }
-                residence_proof: { type: string, format: binary }
-                income_proof: { type: string, format: binary }
       responses:
-        '201': { description: Customer registered }
+        '201': { description: Customer registered; response includes token and user }
         '422': { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
   /auth/login:
     post:
