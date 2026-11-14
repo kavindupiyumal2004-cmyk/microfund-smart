@@ -26,4 +26,12 @@ const sequelize = new Sequelize(
   },
 );
 
+// Windows MySQL exports can contain lowercase table names. Keep model names
+// and association aliases intact while mapping to those existing SQL tables.
+if (String(process.env.DB_TABLE_NAMES).toLowerCase() === 'lowercase') {
+  sequelize.addHook('beforeDefine', (_attributes, options) => {
+    options.tableName = (options.tableName || options.modelName).toLowerCase();
+  });
+}
+
 module.exports = sequelize;

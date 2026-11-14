@@ -40,6 +40,11 @@ Do not run db:sync or seed automatically during deployment.
 
 ## Files and email
 
+For a Windows export imported with all-lowercase table names (such as `user`,
+`role`, `loanapplication`), set `DB_TABLE_NAMES=lowercase` in Render. This maps
+all Sequelize models to existing lowercase tables without renaming tables or
+changing data. Omit it for the original mixed-case SQL schema. Keep DB_SYNC=false.
+
 For the existing disk-based upload implementation, use a paid web service with
 a persistent disk mounted at `/var/data` and set:
 
