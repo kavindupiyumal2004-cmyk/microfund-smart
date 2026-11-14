@@ -62,7 +62,7 @@ const definitions = {
   users: {
     title: 'Registered User Report',
     columns: {
-      full_name: 'Name', email: 'Email', role: 'Role', nic: 'NIC', phone: 'Phone', area: 'Area / Branch', email_verified: 'Email Verified',
+      full_name: 'Name', email: 'Email', role: 'Role', nic: 'NIC', phone: 'Phone', area: 'Area / Branch',
       document_status: 'Document Status', account_status: 'Account Status', registered_at: 'Registered At', last_login_at: 'Last Login',
     },
     defaults: ['full_name', 'email', 'role', 'nic', 'phone', 'area', 'account_status', 'registered_at'],
@@ -178,7 +178,7 @@ async function loadRows(type, filters = {}, user = null) {
       const requiredAccepted = ['NIC_FRONT', 'NIC_BACK', 'RESIDENCE_PROOF'].every((typeName) => docs.some((doc) => doc.document_type === typeName && doc.status === 'ACCEPTED'));
       return {
         full_name: row.full_name, email: row.email, role: row.Role?.name, nic: row.CustomerProfile?.nic || '-', phone: row.CustomerProfile?.phone || '-',
-        area: row.CustomerProfile?.Area?.name || row.CashierProfile?.branch_name || '-', email_verified: row.email_verified_at ? 'YES' : 'NO',
+        area: row.CustomerProfile?.Area?.name || row.CashierProfile?.branch_name || '-',
         document_status: row.Role?.name === 'CUSTOMER' ? (requiredAccepted ? 'ACCEPTED' : docs.length ? 'IN REVIEW' : 'MISSING') : '-',
         account_status: row.is_active ? 'ACTIVE' : 'INACTIVE', registered_at: dateText(row.created_at), last_login_at: dateTimeText(row.last_login_at),
       };

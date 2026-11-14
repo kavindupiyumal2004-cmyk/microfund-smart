@@ -164,8 +164,7 @@ function importantEventTemplate(name, config = {}) {
   }
 }
 
-const verificationTemplate = (name, url) => polishedTemplate({ name, subject: 'Verify your MicroFund account', heading: 'Verify your email address', message: 'Your customer account has been created. Verify this email address to activate secure access to MicroFund.', status: 'Email verification', tone: 'info', details: [{ label: 'Link expiry', value: '24 hours' }], note: 'If you did not create this account, you can ignore this email.', actionLabel: 'Verify email address', actionUrl: url });
 
 const resetTemplate = (name, url) => polishedTemplate({ name, subject: 'Reset your MicroFund password', heading: 'Create a new password', message: 'We received a request to reset the password for your MicroFund account. Use the secure button below to continue.', status: 'Security request', tone: 'warning', details: [{ label: 'Link expiry', value: `${process.env.TOKEN_EXPIRY_MINUTES || 30} minutes` }], note: 'If you did not request this change, do not open the link. Your current password remains unchanged.', actionLabel: 'Reset password', actionUrl: url });
 
-module.exports = { sendMail, verifySmtp, verificationTemplate, resetTemplate, importantEventTemplate };
+module.exports = { sendMail, verifySmtp, resetTemplate, importantEventTemplate };

@@ -27,7 +27,6 @@ exports.userSummary = asyncHandler(async (_req, res) => {
     CASHIER: await User.count({ where: { role_id: roleMap.CASHIER } }),
     OWNER: await User.count({ where: { role_id: roleMap.OWNER } }),
     MANAGER: await User.count({ where: { role_id: roleMap.MANAGER } }),
-    PENDING_VERIFICATION: await User.count({ where: { role_id: roleMap.CUSTOMER, email_verified_at: null } }),
     INACTIVE: await User.count({ where: { is_active: false } }),
   };
   res.json({ success: true, data: counts });
@@ -40,18 +39,12 @@ exports.users = asyncHandler(async (req, res) => {
   if (category && ['OWNER', 'MANAGER', 'CASHIER', 'AGENT', 'CUSTOMER'].includes(category)) {
     const role = await Role.findOne({ where: { name: category } });
     where.role_id = role.id;
-  } else if (category === 'PENDING_VERIFICATION') {
-    const role = await Role.findOne({ where: { name: 'CUSTOMER' } });
-    where.role_id = role.id;
-    where.email_verified_at = null;
   } else if (category === 'INACTIVE') {
     where.is_active = false;
   }
   if (req.query.status === 'active') where.is_active = true;
   if (req.query.status === 'inactive') where.is_active = false;
   if (req.query.area_id) profileWhere.area_id = Number(req.query.area_id);
-  if (req.query.verification === 'verified') where.email_verified_at = { [Op.ne]: null };
-  if (req.query.verification === 'unverified') where.email_verified_at = null;
   if (req.query.search) {
     const search = req.query.search.trim();
     where[Op.or] = [

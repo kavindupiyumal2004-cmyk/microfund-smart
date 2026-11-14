@@ -6,7 +6,7 @@ const { User, Role, CustomerProfile, CustomerDocument, Area, EmailToken } = requ
 const asyncHandler = require('../utils/asyncHandler');
 const { AppError } = require('../middleware/errorHandler');
 const { createJwt, createOpaqueToken, hashOpaqueToken } = require('../utils/tokens');
-const { sendMail, verifySmtp, verificationTemplate, resetTemplate } = require('../services/emailService');
+const { sendMail, verifySmtp, resetTemplate } = require('../services/emailService');
 const { audit } = require('../services/auditService');
 const { sha256File, cleanupMulterFiles } = require('../utils/files');
 
@@ -105,61 +105,10 @@ exports.register = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  const token = await issueEmailToken(user, 'VERIFY_EMAIL', Number(process.env.EMAIL_VERIFY_EXPIRY_HOURS || 24));
-  const frontend = String(process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0];
-  const url = `${frontend}/verify-email?token=${token}`;
-  let emailSent = false;
-  let emailWarning = null;
-  try {
-    const result = await sendMail({ to: user.email, ...verificationTemplate(user.full_name, url) });
-    emailSent = !result?.skipped;
-    if (result?.skipped) emailWarning = 'SMTP is not configured. Use the development verification link or configure Gmail SMTP.';
-  } catch (error) {
-    emailWarning = `Account created, but the verification email could not be sent: ${error.message}`;
-  }
-
   await audit(req, 'CUSTOMER_REGISTERED', 'User', user.id, { email: user.email, documents: Object.keys(req.files || {}) });
   res.status(201).json({
     success: true,
-    message: emailSent
-      ? 'Registration successful. Please check your email to verify the account.'
-      : 'Registration successful, but email delivery needs attention.',
-    email_sent: emailSent,
-    warning: emailWarning,
-    dev_verification_url: process.env.NODE_ENV === 'development' ? url : undefined,
-  });
-});
-
-exports.verifyEmail = asyncHandler(async (req, res) => {
-  const hash = hashOpaqueToken(req.body.token);
-  const token = await EmailToken.findOne({ where: { token_hash: hash, type: 'VERIFY_EMAIL', used_at: null, expires_at: { [Op.gt]: new Date() } } });
-  if (!token) throw new AppError('The verification link is invalid or has expired.', 400, 'INVALID_VERIFICATION_TOKEN');
-  const user = await User.findByPk(token.user_id);
-  await user.update({ email_verified_at: new Date() });
-  await token.update({ used_at: new Date() });
-  res.json({ success: true, message: 'Email verified successfully. You can now sign in.' });
-});
-
-exports.resendVerification = asyncHandler(async (req, res) => {
-  const user = await User.findOne({ where: { email: req.body.email.toLowerCase().trim() } });
-  let devUrl;
-  let warning;
-  if (user && !user.email_verified_at) {
-    const token = await issueEmailToken(user, 'VERIFY_EMAIL', Number(process.env.EMAIL_VERIFY_EXPIRY_HOURS || 24));
-    const frontend = String(process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0];
-    devUrl = `${frontend}/verify-email?token=${token}`;
-    try {
-      const result = await sendMail({ to: user.email, ...verificationTemplate(user.full_name, devUrl) });
-      if (result?.skipped) warning = 'SMTP is not configured.';
-    } catch (error) {
-      warning = error.message;
-    }
-  }
-  res.json({
-    success: true,
-    message: 'If the account exists and is not verified, a new verification request was created.',
-    warning,
-    dev_verification_url: process.env.NODE_ENV === 'development' ? devUrl : undefined,
+    message: 'Registration successful. You can now sign in.',
   });
 });
 
@@ -170,7 +119,6 @@ exports.login = asyncHandler(async (req, res) => {
     throw new AppError('The email or password is incorrect.', 401, 'INVALID_CREDENTIALS');
   }
   if (!user.is_active) throw new AppError('This account has been disabled.', 403, 'ACCOUNT_DISABLED');
-  if (user.Role.name === 'CUSTOMER' && !user.email_verified_at) throw new AppError('Please verify your email before signing in.', 403, 'EMAIL_NOT_VERIFIED');
   await user.update({ last_login_at: new Date() });
   await audit(req, 'LOGIN_SUCCESS', 'User', user.id);
   res.json({ success: true, token: createJwt(user), user: sanitizeUser(user) });

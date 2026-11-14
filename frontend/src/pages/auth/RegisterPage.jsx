@@ -40,11 +40,10 @@ export default function RegisterPage() {
   if (done) return <AuthShell title="Registration completed" subtitle="Your documents are now waiting for administrative review.">
     <div className="success-panel">
       <FileCheck2 size={38} />
-      <h3>{done.email_sent ? 'Verification email sent' : 'Account created'}</h3>
+      <h3>Account created</h3>
       <p>{done.message}</p>
       {done.warning && <div className="warning-box">{done.warning}</div>}
-      {done.dev_verification_url && <a className="button button-full" href={done.dev_verification_url}>Open development verification link</a>}
-      <Link to="/login" className="text-link">Return to login</Link>
+      <Link to="/login" className="button button-full">Sign in</Link>
     </div>
   </AuthShell>;
 
