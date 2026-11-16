@@ -252,10 +252,7 @@ body.dashboard-menu-open{overflow:hidden}
 .side-menu a:hover{color:#fff;background:rgba(54,136,231,.13);transform:translateX(1px)}
 .side-menu a.active{color:#fff;background:linear-gradient(100deg,#1687ff,#2266b2);box-shadow:0 9px 23px rgba(6,87,180,.30)}
 .side-menu a.active svg{filter:drop-shadow(0 2px 5px rgba(255,255,255,.2))}
-.sidebar-inspiration{margin:auto 2px 12px;padding:15px 14px;border:1px solid rgba(121,183,239,.12);border-radius:13px;background:linear-gradient(145deg,rgba(30,83,137,.42),rgba(16,48,87,.52));color:#bcd5ee}
-.sidebar-inspiration>span{display:grid;place-items:center;width:31px;height:31px;border-radius:10px;background:rgba(27,180,201,.14);color:#45c9dc;margin-bottom:10px}
-.sidebar-inspiration p{margin:0;font-size:12px;line-height:1.45}.sidebar-inspiration strong{color:#54d5ee;font-weight:700}
-.logout-button{margin-top:0;width:100%;border-top:1px solid rgba(255,255,255,.06);border-radius:0;padding-top:14px;color:#9fb2c9}
+.logout-button{margin-top:auto;width:100%;border-top:1px solid rgba(255,255,255,.06);border-radius:0;padding-top:14px;color:#9fb2c9}
 .logout-button:hover{color:#fff}
 
 .topbar{height:64px;padding:0 22px;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--mf-border);box-shadow:0 1px 0 rgba(13,45,80,.02);gap:16px}

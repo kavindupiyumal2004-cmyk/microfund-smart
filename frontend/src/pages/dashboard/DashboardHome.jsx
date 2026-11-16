@@ -54,13 +54,12 @@ export default function DashboardHome() {
   if (!data) return <div className="page-loader small"><span className="spinner" /></div>;
 
   const [sectionLabel, subtitle] = roleCopy[user.role] || roleCopy.CUSTOMER;
-  const firstName = (user.full_name || 'there').trim().split(/\s+/)[0];
 
   return <>
     <div className="page-title premium-page-title">
       <div>
         <span className="eyebrow">{sectionLabel}</span>
-        <h1>Good morning, {firstName}! <span className="wave">👋</span></h1>
+        <h1>Dashboard</h1>
         <p>{subtitle}</p>
       </div>
       <div className="dashboard-date-card">

@@ -14,7 +14,6 @@ import {
   Menu,
   Receipt,
   Settings,
-  Sparkles,
   UploadCloud,
   Users,
   WalletCards,
@@ -103,11 +102,6 @@ export default function DashboardLayout() {
         {roleMenu.map(([label, to, Icon]) => <NavLink key={to} to={to} end={to === '/dashboard'} onClick={() => setMobile(false)}><Icon size={18} /><span>{label}</span></NavLink>)}
         <NavLink to="/dashboard/notifications" onClick={() => setMobile(false)}><Bell size={18} /><span>Notifications</span></NavLink>
       </nav>
-
-      <div className="sidebar-inspiration">
-        <span><Sparkles size={17} /></span>
-        <p>Empowering <strong>small dreams</strong> for a brighter Sri Lanka.</p>
-      </div>
 
       <button type="button" className="logout-button" onClick={signOut}><LogOut size={18} /><span>Sign out</span></button>
     </aside>
