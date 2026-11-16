@@ -6,6 +6,15 @@
     <meta name="theme-color" content="#0f65d8" />
     <meta name="description" content="MicroFund smart microfinance processing and repayment platform" />
     <title>MicroFund Finance</title>
+    <script>
+      (() => {
+        let saved;
+        try { saved = localStorage.getItem('microfund_theme'); } catch {}
+        const theme = saved === 'dark' || saved === 'light' ? saved : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
   </head>
   <body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body>
 </html>

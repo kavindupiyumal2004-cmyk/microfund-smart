@@ -19,9 +19,10 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationBell from './NotificationBell';
+import ThemeToggle from './ThemeToggle';
 
 const menu = {
   OWNER: [
@@ -72,6 +73,17 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const [mobile, setMobile] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+  const profileButtonRef = useRef(null);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    const outside = (event) => { if (!profileRef.current?.contains(event.target)) setProfileOpen(false); };
+    const escape = (event) => { if (event.key === 'Escape') { setProfileOpen(false); profileButtonRef.current?.focus(); } };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
+    return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape); };
+  }, [profileOpen]);
 
   useEffect(() => {
     document.body.classList.toggle('dashboard-menu-open', mobile);
@@ -113,19 +125,21 @@ export default function DashboardLayout() {
         <button type="button" className="topbar-menu" aria-label="Open navigation menu" aria-expanded={mobile} onClick={() => setMobile(true)}><Menu /></button>
 
         <div className="topbar-workspace">
-          <strong>MicroFund Workspace</strong>
-          <small>Secure loan operations</small>
+          <strong>MicroFund <span className="workspace-badge">Workspace</span></strong>
+          <small>Loan management</small>
         </div>
 
         <div className="topbar-actions">
+          <ThemeToggle />
           <NotificationBell />
-          <div className="profile-menu-wrap">
-            <button type="button" className="topbar-profile" title={fullName} aria-expanded={profileOpen} onClick={() => setProfileOpen((value) => !value)}>
+          <div className="profile-menu-wrap" ref={profileRef} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setProfileOpen(false); }}>
+            <button ref={profileButtonRef} type="button" className="topbar-profile" title={fullName} aria-label="Your account" aria-controls="account-panel" aria-expanded={profileOpen} onClick={() => setProfileOpen((value) => !value)}>
               <span className="topbar-avatar">{initials}</span>
-              <span className="topbar-profile-copy"><strong>{roleLabel}</strong><small>{fullName}</small></span>
+              <span className="topbar-profile-copy"><strong>{fullName}</strong><small>{roleLabel.toLowerCase()}</small></span>
               <ChevronDown size={16} className={profileOpen ? 'profile-chevron-open' : ''} />
             </button>
-            {profileOpen && <div className="profile-dropdown">
+            {profileOpen && <div className="profile-dropdown" id="account-panel" aria-label="Account details">
+              <div className="profile-panel-label">Signed in as</div>
               <div className="profile-dropdown-head">
                 <span className="topbar-avatar large">{initials}</span>
                 <div><strong>{fullName}</strong><small>{user?.email || roleLabel}</small><span>{roleLabel}</span></div>
