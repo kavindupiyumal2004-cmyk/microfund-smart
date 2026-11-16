@@ -47,7 +47,7 @@ export default function RegisterPage() {
     }
   };
 
-  return <AuthShell title="Create customer account" subtitle="Create your account first. You can upload documents after registration.">
+  return <AuthShell wide title="Create customer account" subtitle="Create your account first. You can upload documents after registration.">
     <form onSubmit={submit} className="form-stack compact registration-form">
       <div className="form-section-title"><UserRound /><div><strong>Personal information</strong><small>Details used to identify and contact you</small></div></div>
       <div className="form-grid">
