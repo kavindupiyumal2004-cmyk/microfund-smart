@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const controller = require('../controllers/adminController');
 const { authenticate, authorize } = require('../middleware/auth');
 const validate = require('../middleware/validate');
+const loanTypeValidation = require('../middleware/loanTypeValidation');
 
 router.use(authenticate);
 
@@ -32,8 +33,8 @@ router.post('/areas', authorize('MANAGER'), [body('name').trim().notEmpty(), bod
 router.put('/areas/:id', authorize('MANAGER'), controller.updateArea);
 router.delete('/areas/:id', authorize('MANAGER'), controller.deleteArea);
 router.get('/loan-types', authorize('OWNER', 'MANAGER'), controller.loanTypes);
-router.post('/loan-types', authorize('MANAGER'), [body('name').trim().notEmpty(), body('min_amount').isFloat({ min: 1 }), body('max_amount').isFloat({ min: 1 }), body('annual_interest_rate').isFloat({ min: 0 }), body('duration_months').isInt({ min: 1 })], validate, controller.createLoanType);
-router.put('/loan-types/:id', authorize('MANAGER'), controller.updateLoanType);
+router.post('/loan-types', authorize('MANAGER'), loanTypeValidation(), validate, controller.createLoanType);
+router.put('/loan-types/:id', authorize('MANAGER'), loanTypeValidation(), validate, controller.updateLoanType);
 router.delete('/loan-types/:id', authorize('MANAGER'), controller.deleteLoanType);
 router.get('/audit-logs', authorize('OWNER', 'MANAGER'), controller.auditLogs);
 module.exports = router;
