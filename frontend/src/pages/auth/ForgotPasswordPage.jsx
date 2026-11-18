@@ -1,2 +1,40 @@
-import { useState } from 'react';import { Link } from 'react-router-dom';import toast from '../../utils/sweetAlert';import api,{errorMessage} from '../../api/client';import AuthShell from './AuthShell';
-export default function ForgotPasswordPage(){const[email,setEmail]=useState('');const[done,setDone]=useState(null);const[busy,setBusy]=useState(false);const submit=async e=>{e.preventDefault();setBusy(true);try{const {data}=await api.post('/auth/forgot-password',{email}, { timeout: 45000 });setDone(data);}catch(err){toast.error(errorMessage(err));}finally{setBusy(false);}};return <AuthShell title="Forgot your password?" subtitle="We will email a secure password reset link.">{done?<div className="success-panel"><h3>Reset request received</h3><p>{done.message}</p><Link to="/login" className="text-link">Return to login</Link></div>:<form onSubmit={submit} className="form-stack"><label className="field"><span>Email address</span><input type="email" value={email} onChange={e=>setEmail(e.target.value)} required /></label><button className="button button-full" disabled={busy}>{busy?'Sending...':'Send reset link'}</button><p className="form-foot"><Link to="/login">Back to login</Link></p></form>}</AuthShell>}
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import toast from '../../utils/sweetAlert';
+import api, { errorMessage } from '../../api/client';
+import AuthShell from './AuthShell';
+
+export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
+
+  const submit = async (event) => {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    try {
+      await api.post('/auth/forgot-password', { email }, { timeout: 45000 });
+      navigate('/login', { replace: true });
+    } catch (error) {
+      toast.error(errorMessage(error));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <AuthShell title="Forgot your password?" subtitle="Enter the email address registered to your account.">
+      <form onSubmit={submit} className="form-stack">
+        <label className="field">
+          <span>Email address</span>
+          <input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+        </label>
+        <button className="button button-full" disabled={busy}>
+          {busy ? 'Requesting...' : 'Request reset link'}
+        </button>
+        <p className="form-foot">If no link arrives, check your spam folder or contact your manager.</p>
+        <p className="form-foot"><Link to="/login">Back to login</Link></p>
+      </form>
+    </AuthShell>
+  );
+}
