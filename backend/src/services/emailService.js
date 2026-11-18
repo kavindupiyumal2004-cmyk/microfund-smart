@@ -1,6 +1,9 @@
 const nodemailer = require('nodemailer');
 const logger = require('../utils/logger');
 
+const gmailApi = require('./gmailApi');
+const useGmailApi = () => process.env.MAIL_PROVIDER === 'gmail-api';
+const mailConfigured = () => useGmailApi() ? gmailApi.configured() : Boolean(smtpConfig());
 let transporter;
 
 function smtpConfig() {
@@ -12,6 +15,7 @@ function smtpConfig() {
     port: Number(process.env.SMTP_PORT || 465),
     secure: String(process.env.SMTP_SECURE || 'true').toLowerCase() === 'true',
     auth: { user, pass },
+    connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000,
   };
 }
 
@@ -24,6 +28,10 @@ function getTransporter() {
 }
 
 async function verifySmtp() {
+  if (useGmailApi()) {
+    try { await gmailApi.accessToken(); return { configured: true, ok: true, message: 'Gmail authorization works. Send a reset request to verify delivery.' }; }
+    catch (_error) { return { configured: gmailApi.configured(), ok: false, message: 'Gmail authorization failed. Check OAuth settings.' }; }
+  }
   const smtp = getTransporter();
   if (!smtp) return { configured: false, ok: false, message: 'SMTP is not configured.' };
   try {
@@ -36,10 +44,11 @@ async function verifySmtp() {
 }
 
 async function sendMail({ to, subject, html, text }) {
+  if (useGmailApi()) return gmailApi.send({ to, subject, html, text });
   const smtp = getTransporter();
   if (!smtp) {
     logger.warn('SMTP is not configured. Email skipped.', { to, subject });
-    return { skipped: true, reason: 'SMTP_NOT_CONFIGURED' };
+    throw new Error('Email is not configured.');
   }
   try {
     return await smtp.sendMail({
@@ -167,4 +176,4 @@ function importantEventTemplate(name, config = {}) {
 
 const resetTemplate = (name, url) => polishedTemplate({ name, subject: 'Reset your MicroFund password', heading: 'Create a new password', message: 'We received a request to reset the password for your MicroFund account. Use the secure button below to continue.', status: 'Security request', tone: 'warning', details: [{ label: 'Link expiry', value: `${process.env.TOKEN_EXPIRY_MINUTES || 30} minutes` }], note: 'If you did not request this change, do not open the link. Your current password remains unchanged.', actionLabel: 'Reset password', actionUrl: url });
 
-module.exports = { sendMail, verifySmtp, resetTemplate, importantEventTemplate };
+module.exports = { mailConfigured, sendMail, verifySmtp, resetTemplate, importantEventTemplate };

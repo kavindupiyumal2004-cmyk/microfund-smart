@@ -1,8 +1,10 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
+const credentialVersion = (user) => crypto.createHmac('sha256', process.env.JWT_SECRET).update(user.password_hash || '').digest('hex');
+
 const createJwt = (user) => jwt.sign(
-  { sub: user.id, role: user.Role?.name || user.role_name },
+  { sub: user.id, role: user.Role?.name || user.role_name, credential: credentialVersion(user) },
   process.env.JWT_SECRET,
   { expiresIn: process.env.JWT_EXPIRES_IN || '1d' },
 );
@@ -15,4 +17,4 @@ const createOpaqueToken = () => {
 
 const hashOpaqueToken = (raw) => crypto.createHash('sha256').update(raw).digest('hex');
 
-module.exports = { createJwt, createOpaqueToken, hashOpaqueToken };
+module.exports = { credentialVersion, createJwt, createOpaqueToken, hashOpaqueToken };

@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/public/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import AccountSecurityPage from './pages/dashboard/AccountSecurityPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import GuestRoute from './components/GuestRoute';
@@ -32,13 +34,14 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
     </Route>
-    <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
+    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route path="/verify-email" element={<Navigate to="/login" replace />} />
     <Route path="/resend-verification" element={<Navigate to="/login" replace />} />
     <Route element={<ProtectedRoute />}>
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route index element={<DashboardHome />} />
+        <Route path="security" element={<AccountSecurityPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route element={<ProtectedRoute roles={['CUSTOMER']} />}>
           <Route path="apply" element={<ApplyLoanPage />} />

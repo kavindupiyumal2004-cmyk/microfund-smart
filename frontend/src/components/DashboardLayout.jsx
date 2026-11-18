@@ -112,6 +112,7 @@ export default function DashboardLayout() {
 
       <nav className="side-menu">
         {roleMenu.map(([label, to, Icon]) => <NavLink key={to} to={to} end={to === '/dashboard'} onClick={() => setMobile(false)}><Icon size={18} /><span>{label}</span></NavLink>)}
+        <NavLink to="/dashboard/security" onClick={() => setMobile(false)}><Settings size={18} /><span>Account security</span></NavLink>
         <NavLink to="/dashboard/notifications" onClick={() => setMobile(false)}><Bell size={18} /><span>Notifications</span></NavLink>
       </nav>
 
@@ -144,6 +145,7 @@ export default function DashboardLayout() {
                 <span className="topbar-avatar large">{initials}</span>
                 <div><strong>{fullName}</strong><small>{user?.email || roleLabel}</small><span>{roleLabel}</span></div>
               </div>
+              <NavLink className="profile-security-link" to="/dashboard/security" onClick={() => setProfileOpen(false)}><Settings size={17} /> Change password</NavLink>
               <button type="button" className="profile-logout" onClick={signOut}><LogOut size={17} /><span>Sign out</span></button>
             </div>}
           </div>

@@ -18,6 +18,7 @@ function controller(user, passwordMatches, overrides = {}) {
     } },
     '../utils/tokens': { createJwt: () => 'test-token' },
     '../services/emailService': {},
+    '../utils/logger': { error: () => {} },
     '../services/auditService': { audit: async () => {} },
     '../utils/files': {},
   };

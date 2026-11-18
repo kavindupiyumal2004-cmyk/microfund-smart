@@ -11,6 +11,7 @@ if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is required in .env');
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: (process.env.FRONTEND_URL || 'http://localhost:5173').split(','), credentials: true } });
 configureSocket(io);
+app.set('io', io);
 setSocketServer(io);
 
 const port = Number(process.env.PORT || 5000);

@@ -5,7 +5,8 @@ const { User, Role, CustomerProfile, Area, EmailToken } = require('../models');
 const asyncHandler = require('../utils/asyncHandler');
 const { AppError } = require('../middleware/errorHandler');
 const { createJwt, createOpaqueToken, hashOpaqueToken } = require('../utils/tokens');
-const { sendMail, verifySmtp, resetTemplate } = require('../services/emailService');
+const { sendMail, verifySmtp, resetTemplate, mailConfigured } = require('../services/emailService');
+const logger = require('../utils/logger');
 const { audit } = require('../services/auditService');
 
 const sanitizeUser = (user) => ({
@@ -74,7 +75,7 @@ exports.register = asyncHandler(async (req, res) => {
   res.status(201).json({
     success: true,
     message: 'Your account is ready. Upload your documents before applying for a loan.',
-    token: createJwt({ id: user.id, role_name: role.name }),
+    token: createJwt({ id: user.id, password_hash: user.password_hash, role_name: role.name }),
     user: { ...sanitizeUser(user), role: role.name },
   });
 });
@@ -97,36 +98,52 @@ exports.me = asyncHandler(async (req, res) => {
 });
 
 exports.forgotPassword = asyncHandler(async (req, res) => {
+  if (!mailConfigured()) throw new AppError('Password reset email is unavailable. Please contact your manager.', 503, 'EMAIL_UNAVAILABLE');
   const user = await User.findOne({ where: { email: req.body.email.toLowerCase().trim() } });
-  let devResetUrl;
-  let warning;
   if (user && user.is_active) {
     const token = await issueEmailToken(user, 'RESET_PASSWORD', Number(process.env.TOKEN_EXPIRY_MINUTES || 30) / 60);
-    const frontend = String(process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0];
-    devResetUrl = `${frontend}/reset-password?token=${token}`;
+    const frontend = String(process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0].trim().replace(/\/$/, '');
     try {
-      const result = await sendMail({ to: user.email, ...resetTemplate(user.full_name, devResetUrl) });
-      if (result?.skipped) warning = 'SMTP is not configured.';
-    } catch (error) {
-      warning = error.message;
+      await sendMail({ to: user.email, ...resetTemplate(user.full_name, frontend + '/reset-password?token=' + token) });
+    } catch (_error) {
+      await EmailToken.destroy({ where: { token_hash: hashOpaqueToken(token), type: 'RESET_PASSWORD' } });
+      logger.error('Password reset email delivery failed. Check mail provider configuration.');
     }
   }
-  res.json({
-    success: true,
-    message: 'If an active account exists, a reset request was created.',
-    warning,
-    dev_reset_url: process.env.NODE_ENV === 'development' ? devResetUrl : undefined,
+  // Keep the response identical for unknown, disabled and active accounts.
+  res.json({ success: true, message: 'If the address belongs to an active account, we will attempt to send a reset link. Check your inbox and spam folder. If it does not arrive, contact your manager.' });
+});
+
+exports.changePassword = asyncHandler(async (req, res) => {
+  await User.sequelize.transaction(async (transaction) => {
+    const user = await User.findByPk(req.user.id, { transaction, lock: transaction.LOCK.UPDATE });
+    if (!user || !user.is_active) throw new AppError('Account unavailable.', 403);
+    if (!(await bcrypt.compare(req.body.current_password, user.password_hash))) throw new AppError('Current password is incorrect.', 400, 'INCORRECT_PASSWORD');
+    if (await bcrypt.compare(req.body.password, user.password_hash)) throw new AppError('Choose a different new password.', 422);
+    await user.update({ password_hash: await bcrypt.hash(req.body.password, 12) }, { transaction });
+    await EmailToken.update({ used_at: new Date() }, { where: { user_id: user.id, type: 'RESET_PASSWORD', used_at: null }, transaction });
   });
+  req.app?.get('io')?.in('user:' + req.user.id).disconnectSockets(true);
+  await audit(req, 'PASSWORD_CHANGED', 'User', req.user.id);
+  res.json({ success: true, message: 'Password changed. Please sign in again.' });
 });
 
 exports.resetPassword = asyncHandler(async (req, res) => {
   const hash = hashOpaqueToken(req.body.token);
-  const token = await EmailToken.findOne({ where: { token_hash: hash, type: 'RESET_PASSWORD', used_at: null, expires_at: { [Op.gt]: new Date() } } });
-  if (!token) throw new AppError('The reset link is invalid or has expired.', 400, 'INVALID_RESET_TOKEN');
-  const user = await User.findByPk(token.user_id);
-  await user.update({ password_hash: await bcrypt.hash(req.body.password, 12) });
-  await token.update({ used_at: new Date() });
-  await EmailToken.update({ used_at: new Date() }, { where: { user_id: user.id, type: 'RESET_PASSWORD', used_at: null } });
+  let userId;
+  await User.sequelize.transaction(async (transaction) => {
+    const candidate = await EmailToken.findOne({ where: { token_hash: hash, type: 'RESET_PASSWORD' }, transaction });
+    if (!candidate) throw new AppError('The reset link is invalid or has expired.', 400, 'INVALID_RESET_TOKEN');
+    // Lock the user first so reset and authenticated password changes serialize.
+    const user = await User.findByPk(candidate.user_id, { transaction, lock: transaction.LOCK.UPDATE });
+    const token = await EmailToken.findOne({ where: { id: candidate.id, used_at: null, expires_at: { [Op.gt]: new Date() } }, transaction, lock: transaction.LOCK.UPDATE });
+    if (!token || !user || !user.is_active) throw new AppError('The reset link is invalid or has expired.', 400, 'INVALID_RESET_TOKEN');
+    await user.update({ password_hash: await bcrypt.hash(req.body.password, 12) }, { transaction });
+    await EmailToken.update({ used_at: new Date() }, { where: { user_id: user.id, type: 'RESET_PASSWORD', used_at: null }, transaction });
+    userId = user.id;
+  });
+  req.app?.get('io')?.in('user:' + userId).disconnectSockets(true);
+  await audit(req, 'PASSWORD_RESET', 'User', userId);
   res.json({ success: true, message: 'Password changed successfully. Please sign in.' });
 });
 

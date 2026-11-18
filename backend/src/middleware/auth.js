@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { credentialVersion } = require('../utils/tokens');
 const { User, Role } = require('../models');
 const { AppError } = require('./errorHandler');
 const asyncHandler = require('../utils/asyncHandler');
@@ -13,6 +14,7 @@ const authenticate = asyncHandler(async (req, _res, next) => {
   }
   const user = await User.findByPk(payload.sub, { include: Role });
   if (!user || !user.is_active) throw new AppError('This account is unavailable.', 401, 'ACCOUNT_DISABLED');
+  if (payload.credential !== credentialVersion(user)) throw new AppError('Your password has changed. Please sign in again.', 401, 'INVALID_TOKEN');
   req.user = user;
   next();
 });

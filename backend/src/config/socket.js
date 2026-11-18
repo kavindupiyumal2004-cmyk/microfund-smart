@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { credentialVersion } = require('../utils/tokens');
 const { User, Role } = require('../models');
 const logger = require('../utils/logger');
 
@@ -8,7 +9,7 @@ function configureSocket(io) {
       const token = socket.handshake.auth?.token;
       const payload = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findByPk(payload.sub, { include: Role });
-      if (!user || !user.is_active) return next(new Error('Unauthorized'));
+      if (!user || !user.is_active || payload.credential !== credentialVersion(user)) return next(new Error('Unauthorized'));
       socket.user = user;
       return next();
     } catch (_error) { return next(new Error('Unauthorized')); }
