@@ -144,11 +144,12 @@ exports.recommendAgents = asyncHandler(async (req, res) => {
   const scheduledDate = req.query.date ? dayjs(req.query.date) : dayjs().add(1, 'day');
   if (!scheduledDate.isValid()) throw new AppError('Invalid visit date.', 422);
   const role = await Role.findOne({ where: { name: 'AGENT' } });
+  const visitTable = sequelize.getQueryInterface().queryGenerator.quoteTable(FieldVisit.getTableName());
   const agents = await User.findAll({
     where: { role_id: role.id, is_active: true },
     include: [{ model: Area, as: 'ServiceAreas', where: { id: application.area_id }, through: { attributes: [] } }],
     attributes: {
-      include: [[literal(`(SELECT COUNT(*) FROM FieldVisit fv WHERE fv.agent_id = User.id AND DATE(fv.scheduled_at) = ${sequelize.escape(scheduledDate.format('YYYY-MM-DD'))} AND fv.status NOT IN ('COMPLETED','CANCELLED'))`), 'visit_count']],
+      include: [[literal(`(SELECT COUNT(*) FROM ${visitTable} fv WHERE fv.agent_id = User.id AND DATE(fv.scheduled_at) = ${sequelize.escape(scheduledDate.format('YYYY-MM-DD'))} AND fv.status NOT IN ('COMPLETED','CANCELLED'))`), 'visit_count']],
       exclude: ['password_hash'],
     },
     order: [[literal('visit_count'), 'ASC'], ['full_name', 'ASC']],
