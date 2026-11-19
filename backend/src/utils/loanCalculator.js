@@ -31,10 +31,15 @@ function addDaysDateOnly(date, offset) {
   return formatDateOnly({ year: js.getUTCFullYear(), month: js.getUTCMonth() + 1, day: js.getUTCDate() });
 }
 
+function effectiveFrequency(principal, preference) {
+  if (principal <= 50000) return 'WEEKLY';
+  return preference ?? (principal > 100000 ? 'MONTHLY' : 'WEEKLY');
+}
+
 /**
  * MicroFund repayment policy:
- *   - Approved principal <= LKR 100,000 => WEEKLY installments.
- *   - Approved principal >  LKR 100,000 => MONTHLY installments.
+ *   - Up to LKR 50,000 is weekly. Larger loans follow the requested frequency.
+ *   - Applications made before frequency selection retain their legacy default.
  *   - Interest is fixed when the loan is approved (flat-rate calculation).
  *   - A late payment NEVER increases amount_due, total_interest or total_payable.
  *     Late installments are only marked OVERDUE by the collection process.
@@ -43,7 +48,7 @@ function addDaysDateOnly(date, offset) {
  * approximately 52 weeks per year; monthly loans use one installment per month.
  * startDate is the first installment due date.
  */
-function calculateFlatRateLoan({ principal, annualInterestRate, durationMonths, startDate }) {
+function calculateFlatRateLoan({ principal, annualInterestRate, durationMonths, startDate, requestedFrequency }) {
   const p = Number(principal);
   const rate = Number(annualInterestRate);
   const months = Number(durationMonths);
@@ -53,7 +58,7 @@ function calculateFlatRateLoan({ principal, annualInterestRate, durationMonths, 
     throw new Error('Invalid loan calculation inputs.');
   }
 
-  const repaymentFrequency = p > 100000 ? 'MONTHLY' : 'WEEKLY';
+  const repaymentFrequency = effectiveFrequency(p, requestedFrequency);
   const installmentCount = repaymentFrequency === 'MONTHLY'
     ? months
     : Math.max(1, Math.ceil((months * 52) / 12));
@@ -95,4 +100,4 @@ function calculateFlatRateLoan({ principal, annualInterestRate, durationMonths, 
   };
 }
 
-module.exports = { calculateFlatRateLoan };
+module.exports = { calculateFlatRateLoan, effectiveFrequency };

@@ -9,7 +9,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const { AppError } = require('../middleware/errorHandler');
 const { notifyUser, notifyRole } = require('../services/notificationService');
 const { audit } = require('../services/auditService');
-const { calculateFlatRateLoan } = require('../utils/loanCalculator');
+const { calculateFlatRateLoan, effectiveFrequency } = require('../utils/loanCalculator');
 
 const customerAttributes = ['id', 'full_name', 'email', 'is_active'];
 const applicationInclude = [
@@ -30,6 +30,12 @@ function ref(prefix) {
   return `${prefix}-${dayjs().format('YYYYMMDD')}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
+function validateTerm(months, product) {
+  if (!Number.isInteger(months) || months < 1 || months > product.duration_months) {
+    throw new AppError(`Choose a term between 1 and ${product.duration_months} months.`, 422);
+  }
+}
+
 exports.create = asyncHandler(async (req, res) => {
   const requiredDocs = await CustomerDocument.findAll({ where: { user_id: req.user.id, is_current: true, document_type: { [Op.in]: ['NIC_FRONT', 'NIC_BACK', 'RESIDENCE_PROOF'] } } });
   const requiredReady = ['NIC_FRONT', 'NIC_BACK', 'RESIDENCE_PROOF'].every((type) => requiredDocs.some((doc) => doc.document_type === type));
@@ -41,6 +47,14 @@ exports.create = asyncHandler(async (req, res) => {
   if (amount < Number(loanType.min_amount) || amount > Number(loanType.max_amount)) {
     throw new AppError(`Requested amount must be between ${loanType.min_amount} and ${loanType.max_amount}.`, 422, 'AMOUNT_OUT_OF_RANGE');
   }
+  const requestedMonths = Number(req.body.requested_duration_months ?? loanType.duration_months);
+  validateTerm(requestedMonths, loanType);
+  if (amount > 50000 && !req.body.requested_frequency) {
+    throw new AppError('Choose weekly or monthly installments.', 422);
+  }
+  if (amount <= 50000 && req.body.requested_frequency === 'MONTHLY') {
+    throw new AppError('Loans up to LKR 50,000 require weekly installments.', 422);
+  }
   const area = await Area.findByPk(req.body.area_id);
   if (!area || !area.is_active) throw new AppError('Invalid service area.', 422, 'INVALID_AREA');
   const application = await LoanApplication.create({
@@ -49,7 +63,8 @@ exports.create = asyncHandler(async (req, res) => {
     loan_type_id: loanType.id,
     area_id: area.id,
     requested_amount: amount,
-    requested_duration_months: req.body.requested_duration_months ?? null,
+    requested_duration_months: requestedMonths,
+    requested_frequency: effectiveFrequency(amount, req.body.requested_frequency),
     purpose: req.body.purpose.trim(),
     monthly_income: Number(req.body.monthly_income),
     status: 'SUBMITTED',
@@ -211,8 +226,10 @@ exports.saveAssessment = asyncHandler(async (req, res) => {
   if (proposedAmount <= 0 || proposedAmount > Number(application.requested_amount)) throw new AppError('Proposed amount must be positive and cannot exceed the requested amount.', 422);
   const interestRate = Number(req.body.proposed_interest_rate ?? application.LoanType.annual_interest_rate);
   const durationMonths = Number(req.body.proposed_duration_months ?? application.requested_duration_months ?? application.LoanType.duration_months);
-  const firstInstallmentDate = dayjs().add(proposedAmount > 100000 ? 30 : 7, 'day').format('YYYY-MM-DD');
-  const estimate = calculateFlatRateLoan({ principal: proposedAmount, annualInterestRate: interestRate, durationMonths, startDate: firstInstallmentDate });
+  validateTerm(durationMonths, application.LoanType);
+  const frequency = effectiveFrequency(proposedAmount, application.requested_frequency);
+  const firstInstallmentDate = dayjs().add(frequency === 'MONTHLY' ? 30 : 7, 'day').format('YYYY-MM-DD');
+  const estimate = calculateFlatRateLoan({ principal: proposedAmount, annualInterestRate: interestRate, durationMonths, requestedFrequency: frequency, startDate: firstInstallmentDate });
 
   const [assessment, created] = await CreditAssessment.findOrCreate({
     where: { application_id: application.id },
@@ -283,7 +300,9 @@ exports.approve = asyncHandler(async (req, res) => {
   if (amount <= 0 || amount > Number(application.requested_amount)) throw new AppError('Approved amount must be positive and cannot exceed the requested amount.', 422);
   const interestRate = Number(req.body.interest_rate ?? application.LoanType.annual_interest_rate);
   const durationMonths = Number(req.body.duration_months ?? application.requested_duration_months ?? application.LoanType.duration_months);
+  validateTerm(durationMonths, application.LoanType);
   const calculation = calculateFlatRateLoan({
+    requestedFrequency: application.requested_frequency,
     principal: amount,
     annualInterestRate: interestRate,
     durationMonths,
@@ -293,6 +312,7 @@ exports.approve = asyncHandler(async (req, res) => {
   try {
     const loan = await Loan.create({
       loan_no: ref('LN'), application_id: application.id, customer_id: application.customer_id,
+      repayment_frequency: calculation.repaymentFrequency,
       principal: amount, interest_rate: interestRate, duration_months: durationMonths,
       total_interest: calculation.totalInterest, total_payable: calculation.totalPayable,
       monthly_installment: calculation.monthlyInstallment, start_date: calculation.startDate,

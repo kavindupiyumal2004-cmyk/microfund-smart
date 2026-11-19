@@ -7,6 +7,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 router.use(authenticate);
 router.post('/', authorize('CUSTOMER'), [
   body('loan_type_id').isInt({ min: 1 }), body('area_id').isInt({ min: 1 }),
+  body('requested_frequency').optional().isIn(['WEEKLY', 'MONTHLY']),
   body('requested_duration_months').optional().isInt({ min: 1, max: 120 }),
   body('requested_amount').isFloat({ min: 1 }), body('monthly_income').isFloat({ min: 1 }),
   body('purpose').trim().isLength({ min: 10, max: 2000 }),

@@ -1,9 +1,10 @@
 # MicroFund V3.2 Loan Rules & Header Update
 
 ## Repayment frequency
-- Approved principal **LKR 100,000 or below**: repayment schedule is **weekly**.
-- Approved principal **above LKR 100,000**: repayment schedule is **monthly**.
-- The frequency is automatic from the approved principal; users do not manually choose it.
+- Up to and including LKR 50,000, installments are weekly.
+- Above LKR 50,000, the customer chooses weekly or monthly installments when applying.
+- If approval reduces the principal to LKR 50,000 or below, the schedule uses weekly installments.
+- The loan type duration is the maximum requested or approved term.
 
 ## Interest and late payments
 - Normal agreed loan interest is calculated when the loan is approved.
@@ -16,4 +17,4 @@
 - Sidebar sign-out remains available as a second convenient exit.
 
 ## Compatibility note
-The existing database column `monthly_installment` is retained for backward compatibility. In V3.2 it stores the standard installment amount for either weekly or monthly schedules. The frontend labels it correctly based on approved principal.
+Before deploying to an existing database, run `node src/scripts/addRepaymentFrequency.js` from the backend directory. New applications store the requested frequency and new loans store the approved frequency. Older loans keep their original schedules and display their historical frequency. The column `monthly_installment` stores the standard installment amount for either frequency.
