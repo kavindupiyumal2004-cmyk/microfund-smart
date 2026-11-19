@@ -40,8 +40,6 @@ const menu = {
     ['Dashboard', '/dashboard', Gauge],
     ['Applications', '/dashboard/applications', FileCheck2],
     ['Staff & Customers', '/dashboard/users', Users],
-    ['Payments', '/dashboard/payments', Receipt],
-    ['Payment Reviews', '/dashboard/payment-reviews', UploadCloud],
     ['Collections', '/dashboard/collections', HandCoins],
     ['Areas & Products', '/dashboard/catalog', Settings],
     ['Reports', '/dashboard/reports', FileText],
