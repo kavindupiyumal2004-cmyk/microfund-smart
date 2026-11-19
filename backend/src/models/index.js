@@ -89,6 +89,7 @@ const LoanApplication = sequelize.define('LoanApplication', {
   customer_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
   loan_type_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
   area_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
+  requested_duration_months: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
   requested_amount: { type: DataTypes.DECIMAL(14, 2), allowNull: false },
   purpose: { type: DataTypes.TEXT, allowNull: false },
   monthly_income: { type: DataTypes.DECIMAL(14, 2), allowNull: false },

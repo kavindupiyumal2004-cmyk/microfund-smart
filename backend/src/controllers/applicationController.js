@@ -49,6 +49,7 @@ exports.create = asyncHandler(async (req, res) => {
     loan_type_id: loanType.id,
     area_id: area.id,
     requested_amount: amount,
+    requested_duration_months: req.body.requested_duration_months ?? null,
     purpose: req.body.purpose.trim(),
     monthly_income: Number(req.body.monthly_income),
     status: 'SUBMITTED',
@@ -208,7 +209,7 @@ exports.saveAssessment = asyncHandler(async (req, res) => {
   const proposedAmount = Number(req.body.proposed_amount || application.requested_amount);
   if (proposedAmount <= 0 || proposedAmount > Number(application.requested_amount)) throw new AppError('Proposed amount must be positive and cannot exceed the requested amount.', 422);
   const interestRate = Number(req.body.proposed_interest_rate ?? application.LoanType.annual_interest_rate);
-  const durationMonths = Number(req.body.proposed_duration_months ?? application.LoanType.duration_months);
+  const durationMonths = Number(req.body.proposed_duration_months ?? application.requested_duration_months ?? application.LoanType.duration_months);
   const firstInstallmentDate = dayjs().add(proposedAmount > 100000 ? 30 : 7, 'day').format('YYYY-MM-DD');
   const estimate = calculateFlatRateLoan({ principal: proposedAmount, annualInterestRate: interestRate, durationMonths, startDate: firstInstallmentDate });
 
@@ -282,7 +283,7 @@ exports.approve = asyncHandler(async (req, res) => {
   const amount = Number(req.body.approved_amount);
   if (amount <= 0 || amount > Number(application.requested_amount)) throw new AppError('Approved amount must be positive and cannot exceed the requested amount.', 422);
   const interestRate = Number(req.body.interest_rate ?? application.LoanType.annual_interest_rate);
-  const durationMonths = Number(req.body.duration_months ?? application.LoanType.duration_months);
+  const durationMonths = Number(req.body.duration_months ?? application.requested_duration_months ?? application.LoanType.duration_months);
   const calculation = calculateFlatRateLoan({
     principal: amount,
     annualInterestRate: interestRate,

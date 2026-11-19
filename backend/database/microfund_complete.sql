@@ -161,6 +161,7 @@ CREATE TABLE `LoanApplication` (
   `customer_id` INT UNSIGNED NOT NULL,
   `loan_type_id` INT UNSIGNED NOT NULL,
   `area_id` INT UNSIGNED NOT NULL,
+  `requested_duration_months` INT UNSIGNED NULL,
   `requested_amount` DECIMAL(14,2) NOT NULL,
   `purpose` TEXT NOT NULL,
   `monthly_income` DECIMAL(14,2) NOT NULL,
