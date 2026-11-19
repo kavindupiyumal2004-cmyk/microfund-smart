@@ -1,5 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const { DocumentFile } = require('../services/documentStorage');
+const { privateRoot } = require('../middleware/upload');
 const {
   CustomerDocument, FieldOfficerDocument, OnlinePaymentSubmission, LoanApplication,
   FieldVisit,
@@ -7,14 +9,25 @@ const {
 const asyncHandler = require('../utils/asyncHandler');
 const { AppError } = require('../middleware/errorHandler');
 
-function sendPrivate(res, row, fileField, download) {
-  const absolute = path.resolve(row[fileField]);
-  if (!fs.existsSync(absolute)) throw new AppError('The stored file is missing.', 404, 'FILE_MISSING');
+async function sendPrivate(res, row, fileField, download, folder) {
+  const stored = row[fileField];
+  const name = row.original_name || path.win32.basename(stored);
+  let contents;
+  let absolute;
+  if (stored.startsWith('db:')) {
+    const file = await DocumentFile.findByPk(stored.slice(3));
+    contents = file?.contents;
+  } else {
+    absolute = [path.resolve(stored), path.join(privateRoot, folder, path.win32.basename(stored))]
+      .find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile());
+  }
+  if (!contents && !absolute) throw new AppError('The uploaded file is unavailable. Please upload the original file again.', 404, 'FILE_MISSING');
   res.setHeader('Content-Type', row.mime_type || 'application/octet-stream');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
   const disposition = download === 'true' ? 'attachment' : 'inline';
-  res.setHeader('Content-Disposition', `${disposition}; filename*=UTF-8''${encodeURIComponent(row.original_name || path.basename(absolute))}`);
+  res.setHeader('Content-Disposition', `${disposition}; filename*=UTF-8''${encodeURIComponent(name)}`);
   res.setHeader('Cache-Control', 'private, no-store');
-  return res.sendFile(absolute);
+  return contents ? res.send(contents) : res.sendFile(absolute);
 }
 
 exports.customerDocument = asyncHandler(async (req, res) => {
@@ -26,7 +39,7 @@ exports.customerDocument = asyncHandler(async (req, res) => {
     allowed = Boolean(await LoanApplication.findOne({ where: { customer_id: row.user_id, assigned_agent_id: req.user.id } }));
   }
   if (!allowed) throw new AppError('Access denied.', 403);
-  return sendPrivate(res, row, 'file_path', req.query.download);
+  return sendPrivate(res, row, 'file_path', req.query.download, 'customer-documents');
 });
 
 exports.fieldDocument = asyncHandler(async (req, res) => {
@@ -38,7 +51,7 @@ exports.fieldDocument = asyncHandler(async (req, res) => {
     || (role === 'AGENT' && row.agent_id === req.user.id)
     || (role === 'CUSTOMER' && customerId === req.user.id);
   if (!allowed) throw new AppError('Access denied.', 403);
-  return sendPrivate(res, row, 'file_path', req.query.download);
+  return sendPrivate(res, row, 'file_path', req.query.download, 'field-documents');
 });
 
 exports.paymentSlip = asyncHandler(async (req, res) => {
@@ -49,5 +62,5 @@ exports.paymentSlip = asyncHandler(async (req, res) => {
     || (role === 'CUSTOMER' && row.customer_id === req.user.id)
     || (role === 'CASHIER' && row.assigned_cashier_id === req.user.id);
   if (!allowed) throw new AppError('Access denied.', 403);
-  return sendPrivate(res, row, 'slip_path', req.query.download);
+  return sendPrivate(res, row, 'slip_path', req.query.download, 'payment-slips');
 });

@@ -6,6 +6,7 @@ const {
 const asyncHandler = require('../utils/asyncHandler');
 const { AppError } = require('../middleware/errorHandler');
 const { sha256File, safeUnlink } = require('../utils/files');
+const { storeDocument } = require('../services/documentStorage');
 const { notifyUser, notifyRole } = require('../services/notificationService');
 const { audit } = require('../services/auditService');
 
@@ -43,14 +44,13 @@ exports.reuploadCustomerDocument = asyncHandler(async (req, res) => {
   }
   const previous = await CustomerDocument.findOne({ where: { user_id: req.user.id, document_type: type, is_current: true } });
   const hash = await sha256File(req.file.path);
-  const transaction = await CustomerDocument.sequelize.transaction();
-  try {
+  const row = await storeDocument(req.file, async (filePath, transaction) => {
     if (previous) await previous.update({ is_current: false }, { transaction });
-    const row = await CustomerDocument.create({
+    return CustomerDocument.create({
       user_id: req.user.id,
       document_type: type,
       title: req.body.title?.trim() || type.replaceAll('_', ' '),
-      file_path: req.file.path,
+      file_path: filePath,
       original_name: req.file.originalname,
       mime_type: req.file.mimetype,
       size_bytes: req.file.size,
@@ -59,15 +59,10 @@ exports.reuploadCustomerDocument = asyncHandler(async (req, res) => {
       version: previous ? previous.version + 1 : 1,
       is_current: true,
     }, { transaction });
-    await transaction.commit();
-    await notifyRole('MANAGER', { title: 'Customer document uploaded', message: `${req.user.full_name} uploaded ${row.title}.`, type: 'DOCUMENT', link: '/dashboard/applications' });
-    await audit(req, 'CUSTOMER_DOCUMENT_UPLOADED', 'CustomerDocument', row.id, { type, version: row.version });
-    res.status(201).json({ success: true, data: publicDocument(row) });
-  } catch (error) {
-    await transaction.rollback();
-    safeUnlink(req.file.path);
-    throw error;
-  }
+  });
+  await notifyRole('MANAGER', { title: 'Customer document uploaded', message: `${req.user.full_name} uploaded ${row.title}.`, type: 'DOCUMENT', link: '/dashboard/applications' });
+  await audit(req, 'CUSTOMER_DOCUMENT_UPLOADED', 'CustomerDocument', row.id, { type, version: row.version });
+  res.status(201).json({ success: true, data: publicDocument(row) });
 });
 
 exports.applicationDocuments = asyncHandler(async (req, res) => {
@@ -180,17 +175,17 @@ exports.uploadFieldDocument = asyncHandler(async (req, res) => {
     throw new AppError('Invalid field document type.', 422, 'INVALID_DOCUMENT_TYPE');
   }
   const hash = await sha256File(req.file.path);
-  const row = await FieldOfficerDocument.create({
+  const row = await storeDocument(req.file, (filePath, transaction) => FieldOfficerDocument.create({
     visit_id: visit.id,
     agent_id: req.user.id,
     document_type: type,
     title: req.body.title?.trim() || type.replaceAll('_', ' '),
-    file_path: req.file.path,
+    file_path: filePath,
     original_name: req.file.originalname,
     mime_type: req.file.mimetype,
     size_bytes: req.file.size,
     file_hash: hash,
-  });
+  }, { transaction }));
   await notifyRole('MANAGER', { title: 'New field verification evidence', message: `${req.user.full_name} uploaded ${row.title}.`, type: 'DOCUMENT', link: '/dashboard/applications' });
   await audit(req, 'FIELD_DOCUMENT_UPLOADED', 'FieldOfficerDocument', row.id, { visit_id: visit.id, type });
   res.status(201).json({ success: true, data: publicFieldDocument(row) });

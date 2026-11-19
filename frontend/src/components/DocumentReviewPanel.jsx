@@ -34,7 +34,7 @@ function ReviewActions({ source, document, onDone }) {
   };
 
   return <div className="record-actions compact-actions">
-    <button className="button button-sm" type="button" onClick={() => review('ACCEPTED')}>Accept</button>
+    <button className="button button-sm button-accept" type="button" onClick={() => review('ACCEPTED')}>Accept</button>
     <button className="button button-sm button-danger-outline" type="button" onClick={() => review('REJECTED')}>Reject</button>
     <button className="button button-sm button-warning" type="button" onClick={() => review('REUPLOAD_REQUIRED')}>Request re-upload</button>
   </div>;
