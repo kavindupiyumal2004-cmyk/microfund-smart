@@ -270,8 +270,6 @@ async function ensureDocumentsAccepted(application) {
   const completed = visits.find((visit) => visit.VerificationReport);
   if (!completed) throw new AppError('A completed field verification report is required.', 422, 'FIELD_REPORT_REQUIRED');
   const allFieldDocs = visits.flatMap((visit) => visit.FieldDocuments || []);
-  const fieldReady = allFieldDocs.some((doc) => ['RESIDENCE_PHOTO', 'VISIT_REPORT', 'SIGNED_FORM'].includes(doc.document_type) && doc.status === 'ACCEPTED');
-  if (!fieldReady) throw new AppError('At least one accepted residence photo, visit report or signed form is required.', 422, 'FIELD_DOCUMENT_REVIEW_INCOMPLETE');
   if (allFieldDocs.some((doc) => ['PENDING', 'REUPLOAD_REQUIRED'].includes(doc.status))) throw new AppError('All uploaded field documents must be reviewed before approval.', 422, 'FIELD_DOCUMENTS_PENDING');
 }
 

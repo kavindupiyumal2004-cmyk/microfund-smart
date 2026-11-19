@@ -82,7 +82,7 @@ export default function DocumentReviewPanel({ applicationId, admin = false }) {
       <article><small>Customer documents</small><strong>{summary.customer_accepted || 0}/{summary.customer_total || 0} accepted</strong></article>
       <article><small>Required customer set</small><strong>{summary.required_customer_accepted ? 'Ready' : 'Incomplete'}</strong></article>
       <article><small>Field evidence</small><strong>{summary.field_accepted || 0}/{summary.field_total || 0} accepted</strong></article>
-      <article><small>Approval evidence</small><strong>{summary.field_ready ? 'Ready' : 'Incomplete'}</strong></article>
+      <article><small>Field evidence upload</small><strong>Optional</strong></article>
     </div>
     <h3 className="subheading">Customer-submitted documents</h3>
     <div className="document-grid">{customerDocuments.length ? customerDocuments.map((document) => <DocumentCard key={`c-${document.id}`} document={document} source="customer" admin={admin} onDone={load} />) : <p className="muted-copy">No customer documents uploaded yet.</p>}</div>
